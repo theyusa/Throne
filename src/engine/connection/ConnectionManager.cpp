@@ -39,6 +39,11 @@ namespace {
 #else
     constexpr bool kConnectionManagerLinux = false;
 #endif
+#ifdef Q_OS_WIN
+    constexpr bool kConnectionManagerWindows = true;
+#else
+    constexpr bool kConnectionManagerWindows = false;
+#endif
 
     // Main thread, headless Linux, as a start brings the Tun up: once per boot each, the Tun settings that cut API clients off.
     void connectionManagerWarnTunApiReach() {
@@ -222,6 +227,14 @@ namespace Engine {
                 if (error.contains("configure tun interface")) {
                     finish(StartOutcome::TunFailed, error);
                     if (!resolved.interactive) return false;
+                    if (error.contains("open existing adapter")) {
+                        runOnUiThread([=, this] {
+                            if (!policy()->offerLeftoverTunAdapterRetry(error)) return;
+                            if (Configs::dataManager->settingsRepo->prepare_exit || connectionState() != ConnectionState::Idle) return;
+                            start(StartRequest{ent->id});
+                        });
+                        return false;
+                    }
                     runOnUiThread([=, this] {
                         if (policy()->offerCoreReset(error)) m_coreSupervisor->resetCore();
                     });
@@ -299,8 +312,10 @@ namespace Engine {
 
         if (kConnectionManagerLinux && m_options.headless && Configs::dataManager->settingsRepo->spmode_vpn) connectionManagerWarnTunApiReach();
 
+        // Wintun spends 15 s on a leftover adapter before failing; a restart from the prompt inside that window strands a new one.
+        const int slowStartMs = kConnectionManagerWindows && !result->tunIPv4CIDR.isEmpty() ? 20000 : 10000;
         const Engine::SlowOperation slowStart = resolved.interactive
-            ? policy()->slowOperation(Engine::SlowOperationKind::Start, 10000)
+            ? policy()->slowOperation(Engine::SlowOperationKind::Start, slowStartMs)
             : Engine::SlowOperation{};
 
         runOnUiThread([this] {

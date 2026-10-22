@@ -11,8 +11,6 @@
 #include <QScreen>
 #include <QValidator>
 
-#include <limits>
-
 namespace {
     // 0 means "keep the core default" and is omitted from the config, so show it as blank.
     void LoadOptionalInt(QLineEdit *edit, const int value, QObject *parent) {
@@ -30,10 +28,7 @@ DialogPresetSettings::DialogPresetSettings(QWidget *parent) : QDialog(parent), u
     form = new Validation::Form(this);
     form->attachStatus(ui->buttonBox);
 
-    ui->mux_protocol->addItems({"h2mux", "smux", "yamux"});
-    D_LOAD_COMBO_STRING(mux_protocol)
-    D_LOAD_INT(mux_concurrency)
-    D_LOAD_BOOL(mux_padding)
+    ui->mux_singbox->setSettings(Configs::MuxSettings::Preset());
     D_LOAD_BOOL(mux_default_on)
     ui->xray_mux_concurrency->setText(Int2String(Configs::dataManager->settingsRepo->xray_mux_concurrency));
     ui->xray_default_mux->setChecked(Configs::dataManager->settingsRepo->xray_mux_default_on);
@@ -80,7 +75,7 @@ DialogPresetSettings::DialogPresetSettings(QWidget *parent) : QDialog(parent), u
 
     using namespace Validation;
     const auto boxLabel = [](const QGroupBox *box, const QLabel *label) { return QStringLiteral("%1 %2").arg(box->title(), label->text()); };
-    form->bind(ui->mux_concurrency, Rules::Int(0, std::numeric_limits<int>::max())).label(boxLabel(ui->mux_singbox_box, ui->mux_concurrency_l));
+    ui->mux_singbox->bindValidation(form, ui->mux_singbox_box->title());
     form->bind(ui->xray_mux_concurrency, Rules::Int(0, kPresetMaxXrayMuxConcurrency)).label(boxLabel(ui->mux_xray_box, ui->xray_mux_concurrency_l));
     const QString fragmentSizeLabel = boxLabel(ui->tls_fragment_box, ui->fragment_size_l);
     form->bind(ui->fragment_size, Configs::Checks::TlsFragmentSize).label(fragmentSizeLabel);
@@ -109,9 +104,7 @@ DialogPresetSettings::~DialogPresetSettings() {
 
 void DialogPresetSettings::accept() {
     if (!form->validateAll()) return;
-    D_SAVE_COMBO_STRING(mux_protocol)
-    D_SAVE_INT(mux_concurrency)
-    D_SAVE_BOOL(mux_padding)
+    ui->mux_singbox->settings().SaveAsPreset();
     D_SAVE_BOOL(mux_default_on)
     Configs::dataManager->settingsRepo->xray_mux_concurrency = ui->xray_mux_concurrency->text().trimmed().toInt();
     Configs::dataManager->settingsRepo->xray_mux_default_on = ui->xray_default_mux->isChecked();

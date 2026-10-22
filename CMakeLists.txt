@@ -216,6 +216,7 @@ set(PROJECT_SOURCES
         src/ui/mainWindow/mainwindow_system.cpp
         src/ui/mainWindow/mainwindow_log.cpp
         src/ui/mainWindow/mainwindow_hotkeys.cpp
+        src/ui/mainWindow/mainwindow_palette.cpp
         src/ui/mainWindow/mainwindow_profile_lifecycle.cpp
         src/ui/mainWindow/mainwindow_scanner.cpp
         src/ui/mainWindow/mainwindow_engine_control.cpp
@@ -239,6 +240,8 @@ set(PROJECT_SOURCES
         src/ui/widget/SeriesBuffer.cpp
         include/ui/widget/LiveChart.h
         src/ui/widget/LiveChart.cpp
+        include/ui/widget/MuxSettingsWidget.h
+        src/ui/widget/MuxSettingsWidget.cpp
         include/ui/widget/json/JsonTree.h
         src/ui/widget/json/JsonTree.cpp
         include/ui/widget/json/JsonValidator.h
@@ -274,6 +277,10 @@ set(PROJECT_SOURCES
         include/ui/utils/GuiUtils.hpp
         include/ui/utils/ValidationForm.h
         src/ui/utils/ValidationForm.cpp
+        include/ui/utils/CommandPalette.h
+        src/ui/utils/CommandPalette.cpp
+        include/ui/utils/SettingsIndex.h
+        src/ui/utils/SettingsIndex.cpp
 
         include/ui/profile/dialog_edit_profile.h
         src/ui/profile/dialog_edit_profile.cpp

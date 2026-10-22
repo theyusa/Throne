@@ -4,6 +4,7 @@
 #include "profile_editor.h"
 
 #include "ui_dialog_edit_profile.h"
+#include "include/configs/common/multiplex.h"
 #include "include/database/entities/Profile.h"
 #include "include/engine/EditLocks.h"
 
@@ -51,6 +52,8 @@ private:
         QStringList certificate;
         QString XrayDownloadSettings;
         QJsonObject XrayFinalmask;
+        // Saved into the profile only while Multiplex is Custom.
+        Configs::MuxSettings mux;
     } CACHE;
 
     // dialog_edit_profile.cpp: profile type, protocol editor, common fields, layout

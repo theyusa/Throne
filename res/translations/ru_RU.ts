@@ -2,6 +2,41 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ru_RU">
 <context>
+    <name>CommandPalette</name>
+    <message>
+        <source>Search Commands and Settings</source>
+        <translation>Поиск команд и настроек</translation>
+    </message>
+    <message>
+        <source>Search commands and settings</source>
+        <translation>Поиск команд и настроек</translation>
+    </message>
+    <message>
+        <source>↑↓ move · Enter run · Esc close · &gt; commands only · @ settings only</source>
+        <translation>↑↓ выбор · Enter выполнить · Esc закрыть · &gt; только команды · @ только настройки</translation>
+    </message>
+    <message>
+        <source>Commands</source>
+        <translation>Команды</translation>
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation>Настройки</translation>
+    </message>
+    <message>
+        <source>Nothing found</source>
+        <translation>Ничего не найдено</translation>
+    </message>
+    <message>
+        <source> (on)</source>
+        <translation> (вкл.)</translation>
+    </message>
+    <message>
+        <source> (off)</source>
+        <translation> (выкл.)</translation>
+    </message>
+</context>
+<context>
     <name>ConnectionsFilterHeader</name>
     <message>
         <source>Disable Filter</source>
@@ -25,6 +60,10 @@
     <message>
         <source>System</source>
         <translation>Система</translation>
+    </message>
+    <message>
+        <source>Matched: %1 → %2</source>
+        <translation>Сработало: %1 → %2</translation>
     </message>
     <message>
         <source>Process: %1
@@ -8891,6 +8930,22 @@ Error: %1</source>
         <translation>Отмена</translation>
     </message>
     <message>
+        <source>Leftover Tun adapter</source>
+        <translation>Оставшийся адаптер TUN</translation>
+    </message>
+    <message>
+        <source>Windows was still holding the Tun adapter from an earlier session that did not close cleanly. Starting the profile again usually works; if it keeps failing, restart Windows.
+
+Error: %1</source>
+        <translation>Windows всё ещё удерживала адаптер TUN от предыдущего сеанса, который не был корректно завершён. Обычно помогает повторный запуск профиля; если ошибка повторяется, перезагрузите Windows.
+
+Ошибка: %1</translation>
+    </message>
+    <message>
+        <source>Start Again</source>
+        <translation>Запустить снова</translation>
+    </message>
+    <message>
         <source>Add new Group</source>
         <translation>Добавить новую группу</translation>
     </message>
@@ -9397,12 +9452,40 @@ Name: %1</source>
         <translation>Изменить правила</translation>
     </message>
     <message>
+        <source>Specific server</source>
+        <translation>Другой сервер</translation>
+    </message>
+    <message>
+        <source>Route through another server</source>
+        <translation>Направить через другой сервер</translation>
+    </message>
+    <message>
+        <source>There are no servers to route to.</source>
+        <translation>Нет серверов для маршрутизации.</translation>
+    </message>
+    <message>
         <source>%1 rules</source>
         <translation>Правила «%1»</translation>
     </message>
     <message>
+        <source>Specific server rules</source>
+        <translation>Правила сервера</translation>
+    </message>
+    <message>
         <source>Routing profile &quot;%1&quot;. Checked targets go %2; unchecking one removes its rule.</source>
         <translation>Профиль маршрутизации &quot;%1&quot;. Отмеченные цели попадают в правила «%2»; снятие флажка удаляет правило.</translation>
+    </message>
+    <message>
+        <source>Routing profile &quot;%1&quot;. Checked targets go through the chosen server; unchecking one removes its rule.</source>
+        <translation>Профиль маршрутизации &quot;%1&quot;. Отмеченные цели идут через выбранный сервер; снятие флажка удаляет правило.</translation>
+    </message>
+    <message>
+        <source>Server (type part of its name to search):</source>
+        <translation>Сервер (введите часть имени для поиска):</translation>
+    </message>
+    <message>
+        <source>Search servers</source>
+        <translation>Поиск серверов</translation>
     </message>
     <message>
         <source>in %1</source>
@@ -9565,6 +9648,18 @@ Name: %1</source>
     <message>
         <source>Kill switch is blocking traffic</source>
         <translation>Kill switch блокирует трафик</translation>
+    </message>
+    <message>
+        <source>Search Commands and Settings</source>
+        <translation>Поиск команд и настроек</translation>
+    </message>
+    <message>
+        <source>close the open settings window first</source>
+        <translation>сначала закройте открытое окно настроек</translation>
+    </message>
+    <message>
+        <source>close &quot;%1&quot; first</source>
+        <translation>сначала закройте «%1»</translation>
     </message>
 </context>
 <context>

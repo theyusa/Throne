@@ -9108,6 +9108,22 @@ Error: %1</source>
         <translation>取消</translation>
     </message>
     <message>
+        <source>Leftover Tun adapter</source>
+        <translation>残留的 Tun 适配器</translation>
+    </message>
+    <message>
+        <source>Windows was still holding the Tun adapter from an earlier session that did not close cleanly. Starting the profile again usually works; if it keeps failing, restart Windows.
+
+Error: %1</source>
+        <translation>Windows 仍占用着上一次未正常关闭的会话留下的 Tun 适配器。通常再次启动该配置档即可；如果仍然失败，请重启 Windows。
+
+错误: %1</translation>
+    </message>
+    <message>
+        <source>Start Again</source>
+        <translation>再次启动</translation>
+    </message>
+    <message>
         <location filename="Throne-1.3.1/src/ui/mainWindow/mainwindow_profile_lifecycle.cpp" line="321"/>
         <source>[Auto selector] Running the best %1 of %2 ranked profiles.</source>
         <translation>[自动选择器] 正在运行排名最优的 %1 / %2 个配置档。</translation>

@@ -78,7 +78,14 @@ namespace Configs {
         int current_group = 0;
         QString mux_protocol = "smux";
         bool mux_padding = false;
+        // "max_streams" pools by mux_concurrency streams per connection, "max_connections" by the two below.
+        QString mux_mode = "max_streams";
         int mux_concurrency = 8;
+        int mux_max_connections = 4;
+        int mux_min_streams = 4;
+        bool mux_brutal = false;
+        int mux_brutal_up_mbps = 0;
+        int mux_brutal_down_mbps = 0;
         bool mux_default_on = false;
         // "built-in" = sing-box tls.fragment, "custom" = hiddify dialer-level tls_fragment.
         QString fragment_implementation = "built-in";

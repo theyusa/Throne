@@ -20,6 +20,7 @@ import (
 	"ThroneCore/internal/ipc"
 	"ThroneCore/internal/parentcheck"
 	"ThroneCore/internal/rpc"
+	"ThroneCore/internal/sysdns"
 
 	C "github.com/sagernet/sing-box/constant"
 
@@ -95,6 +96,7 @@ func RunCore() {
 		os.Exit(guard.IdentityExitCode)
 	}
 	guard.CleanupStale()
+	sysdns.RestoreStale()
 
 	go func() {
 		parent, err := os.FindProcess(parentcheck.ParentPID)
@@ -109,6 +111,7 @@ func RunCore() {
 				time.Sleep(time.Second * 10)
 				err = parent.Signal(syscall.Signal(0))
 				if err != nil {
+					sysdns.Release()
 					log.Fatalln("parent exited:", err)
 				}
 			}
@@ -133,6 +136,7 @@ func RunCore() {
 
 	fmt.Println("Core Has Successfully Connected to Throne!")
 	rpc.Serve(conn, debug)
+	sysdns.Release()
 	log.Fatal("IPC connection dropped, exiting")
 }
 
@@ -149,6 +153,10 @@ func main() {
 				fmt.Fprintf(os.Stderr, "check: %v\n", err)
 				os.Exit(1)
 			}
+			os.Exit(0)
+		case "--restore-dns":
+			parentcheck.CheckParentProcess()
+			sysdns.RestoreStale()
 			os.Exit(0)
 		}
 	}

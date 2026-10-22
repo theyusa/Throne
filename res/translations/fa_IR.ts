@@ -2416,6 +2416,22 @@ https://matsuridayo.github.io/n-configuration/#vpn-tun</translation>
         <translation>لغو کردن</translation>
     </message>
     <message>
+        <source>Leftover Tun adapter</source>
+        <translation>آداپتور Tun باقی‌مانده</translation>
+    </message>
+    <message>
+        <source>Windows was still holding the Tun adapter from an earlier session that did not close cleanly. Starting the profile again usually works; if it keeps failing, restart Windows.
+
+Error: %1</source>
+        <translation>ویندوز هنوز آداپتور Tun یک نشست قبلی را که به‌درستی بسته نشده بود نگه داشته بود. معمولاً آغاز دوبارهٔ نمایه کار می‌کند؛ اگر باز هم ناموفق بود، ویندوز را دوباره راه‌اندازی کنید.
+
+خطا: %1</translation>
+    </message>
+    <message>
+        <source>Start Again</source>
+        <translation>آغاز دوباره</translation>
+    </message>
+    <message>
         <source>Add new Group</source>
         <translation>افزودن گروه جدید</translation>
     </message>

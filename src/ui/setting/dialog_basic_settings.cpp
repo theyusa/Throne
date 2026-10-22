@@ -54,6 +54,7 @@
 #include "include/sys/UrlScheme.hpp"
 #include "include/ui/mainwindow.h"
 #include "include/ui/setting/DiagnosticsTab.h"
+#include "include/ui/utils/NativeFileDialog.h"
 
 namespace {
     constexpr int kBasicSettingsMinAutoUpdate = 30;
@@ -313,17 +314,7 @@ DialogBasicSettings::DialogBasicSettings(QWidget *parent)
                        tr("Could not register the handler for throne:// links."));
     connectAssociation(Association::ConfigFiles, ui->file_assoc_auto_register, ui->file_assoc_install, ui->file_assoc_uninstall,
                        tr("Could not register the config file associations."));
-#ifdef Q_OS_MACOS
-    // LaunchServices registers the scheme from the bundle's Info.plist, so there is nothing of ours to add or take back.
-    ui->url_scheme_install->hide();
-    ui->url_scheme_uninstall->hide();
-#endif
-    if (!UrlScheme_IsSupported(Association::ConfigFiles)) {
-        ui->file_assoc_auto_register->hide();
-        ui->file_assoc_status->hide();
-        ui->file_assoc_install->hide();
-        ui->file_assoc_uninstall->hide();
-    }
+    for (auto *widget : UnavailableWidgets(ui)) widget->hide();
     ui->url_scheme_box->setEnabled(UrlScheme_IsSupported(Association::Links));
     refreshUrlSchemeStatus();
 
@@ -343,12 +334,6 @@ DialogBasicSettings::DialogBasicSettings(QWidget *parent)
             ui->inbound_socks_port->setDisabled(false);
         }
     });
-
-#ifndef Q_OS_WIN
-    ui->proxy_scheme_l->hide();
-    ui->proxy_scheme->hide();
-    ui->windows_no_admin->hide();
-#endif
 
     ui->max_log_line->setText(QString::number(Configs::dataManager->settingsRepo->max_log_line));
     ui->log_level->setCurrentText(Configs::dataManager->settingsRepo->log_level);
@@ -411,7 +396,7 @@ DialogBasicSettings::DialogBasicSettings(QWidget *parent)
     connect(ui->select_custom_icon, &QPushButton::clicked, this, [=, this] {
         auto n = QMessageBox::information(this, "Custom Icon Manual", tr(Configs::Information::CustomIconManual.toStdString().c_str()), QMessageBox::Open | QMessageBox::Cancel);
         if (n == QMessageBox::Open) {
-            auto fileNames = QFileDialog::getOpenFileNames(this,
+            auto fileNames = NativeFileDialog::getOpenFileNames(this,
                 tr("Select png icons"), QDir::homePath(), tr("Image Files (*.png)"));
             QString errors;
             for (const auto& fileName : fileNames) {
@@ -622,6 +607,21 @@ void DialogBasicSettings::bindValidation() {
     form->bind(ui->xray_geosite_url, Rules::Url(http)).label(ui->label_xray_geosite_url->text());
 
     form->markAll();
+}
+
+QList<QWidget *> DialogBasicSettings::UnavailableWidgets(const Ui::DialogBasicSettings *ui) {
+    QList<QWidget *> widgets;
+#ifdef Q_OS_MACOS
+    // LaunchServices registers the scheme from the bundle's Info.plist, so there is nothing of ours to add or take back.
+    widgets << ui->url_scheme_install << ui->url_scheme_uninstall;
+#endif
+    if (!UrlScheme_IsSupported(Association::ConfigFiles)) {
+        widgets << ui->file_assoc_auto_register << ui->file_assoc_status << ui->file_assoc_install << ui->file_assoc_uninstall;
+    }
+#ifndef Q_OS_WIN
+    widgets << ui->proxy_scheme_l << ui->proxy_scheme << ui->windows_no_admin;
+#endif
+    return widgets;
 }
 
 void DialogBasicSettings::refreshUrlSchemeStatus() {
@@ -884,7 +884,7 @@ void DialogBasicSettings::on_backup_create_clicked() {
 
     Engine::BackupArchive::Prepare(parts);
 
-    QString filePath = QFileDialog::getSaveFileName(
+    QString filePath = NativeFileDialog::getSaveFileName(
         this,
         tr("Create Backup"),
         QDir::homePath() + "/Throne-backup.thrbackup",
@@ -912,7 +912,7 @@ void DialogBasicSettings::on_backup_create_clicked() {
 
 void DialogBasicSettings::on_backup_restore_clicked() {
     if (webDavBusy) return;
-    QString filePath = QFileDialog::getOpenFileName(
+    QString filePath = NativeFileDialog::getOpenFileName(
         this,
         tr("Restore Backup"),
         QDir::homePath(),

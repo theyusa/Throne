@@ -82,6 +82,10 @@ namespace Engine {
             return target(__func__)->offerCoreReset(error);
         }
 
+        bool offerLeftoverTunAdapterRetry(const QString &error) override {
+            return target(__func__)->offerLeftoverTunAdapterRetry(error);
+        }
+
         void stopFailed(const QString &error) override {
             target(__func__)->stopFailed(error);
         }
