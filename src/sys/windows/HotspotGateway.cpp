@@ -15,12 +15,9 @@
 #include <QString>
 #include <QStringList>
 
-#include <windns.h>
-
-#ifdef __MINGW32__
-// mingw-w64's windns.h omits this prototype although dnsapi exports it; the SDK declares it on MSVC.
-extern "C" DNS_STATUS WINAPI DnsFlushResolverCache(VOID);
-#endif
+// "ipconfig /flushdns" in API form: exported by dnsapi on every Windows version, but declared by neither the SDK's
+// windns.h nor mingw-w64's - and windns.h is deliberately not included, so a future prototype can never clash here.
+extern "C" BOOL WINAPI DnsFlushResolverCache(VOID);
 
 #include <algorithm>
 #include <limits>
