@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QElapsedTimer>
 #include <QObject>
 #include <QString>
 
@@ -55,10 +56,25 @@ namespace Engine {
         // Marshals a watcher event to this thread and debounces bursts.
         void scheduleCheck();
 
-        void checkAndUpdate(bool forceReload, bool allowReload);
+        // Debounced watcher event: confirmed is set on the settling re-read. A new gateway must survive the settling
+        // window before anything is rewritten - route flaps (a Wi-Fi adapter briefly dropping, a second default route
+        // flickering in) used to restart the core over and over and could not be told apart from a real gateway change.
+        void observe(bool confirmed);
+
+        // Rewrites the managed profile for the current gateway. allowReload restarts the running profile; immediateRestart
+        // skips the rate limit (user actions), watcher-driven restarts cost at most one restart per cooldown window.
+        void apply(bool allowReload, bool immediateRestart = false);
+
+        void restartRunning(int managedId, bool immediate);
 
         QString m_gateway;
+        // What a pending settling pass is confirming; empty while none is pending.
+        QString m_candidate;
         QTimer *m_debounce = nullptr;
+        QTimer *m_settle = nullptr;
+        QTimer *m_restartDefer = nullptr;
+        QElapsedTimer m_lastRestart;
         bool m_watching = false;
+        bool m_restartPending = false;
     };
 } // namespace Engine
