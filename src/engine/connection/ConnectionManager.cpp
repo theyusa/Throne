@@ -12,6 +12,7 @@
 #include "include/engine/ThreadCheck.h"
 #include "include/engine/autoselector/AutoSelectorController.h"
 #include "include/engine/services/AssetUpdates.h"
+#include "include/engine/services/HotspotGatewayManager.h"
 #include "include/engine/services/StatsService.h"
 #include "include/engine/supervisor/CoreSupervisor.h"
 #include "include/engine/tests/TestRunner.h"
@@ -140,6 +141,10 @@ namespace Engine {
 
         // Ranking must run before the config is built and it blocks, so hop off the UI thread.
         if (m_autoSelector->rankBeforeStart(ent, resolved.interactive, [=, this] { start(resolved); })) return;
+
+        // The managed Hotspot Gateway profile follows the Wi-Fi gateway, which DHCP moves between sessions: re-read it
+        // before the config below is built, so no start ever dials a stale gateway.
+        Engine::HotspotGatewayManager::instance()->beforeCoreStart();
 
         const auto result = Configs::BuildSingBoxConfig(ent);
         if (!result->error.isEmpty()) {

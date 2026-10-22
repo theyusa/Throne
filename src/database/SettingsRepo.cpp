@@ -94,6 +94,8 @@ namespace Configs {
             {"traffic_graph_markers", &traffic_graph_markers},
             {"exit_country_lookup", &exit_country_lookup},
             {"webdav_use_proxy", &webdav_use_proxy},
+            {"hotspot_gateway_enabled", &hotspot_gateway},
+            {"hotspot_gateway_uot", &hotspot_gateway_uot},
         };
 
         intMap = {
@@ -132,6 +134,8 @@ namespace Configs {
             {"h2_max_concurrent_streams", &h2_max_concurrent_streams},
             {"quic_initial_packet_size", &quic_initial_packet_size},
             {"warp_masque_http_mode",  &warp_masque_http_mode},
+            {"hotspot_gateway_port",   &hotspot_gateway_port},
+            {"hotspot_gateway_profile_id", &hotspot_gateway_profile_id},
         };
 
         stringMap = {
@@ -212,6 +216,9 @@ namespace Configs {
             {"inbound_pass",               &inbound_pass},
             {"url_scheme_mirror",          &url_scheme_mirror},
             {"file_assoc_mirror",          &file_assoc_mirror},
+            {"hotspot_gateway_user",       &hotspot_gateway_user},
+            {"hotspot_gateway_pass",       &hotspot_gateway_pass},
+            {"hotspot_gateway_last",       &hotspot_gateway_last},
         };
 
         stringListMap = {

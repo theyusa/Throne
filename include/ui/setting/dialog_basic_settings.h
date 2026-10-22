@@ -41,6 +41,12 @@ private:
 
     void refreshUrlSchemeStatus();
 
+    // The Hotspot Gateway entry: the description, plus "Current gateway: %1" / "no Wi-Fi gateway" while it is on.
+    void refreshHotspotGatewaySummary();
+
+    // The managed profile's editor; true when it saved (Cancel saves nothing).
+    bool showHotspotDialog();
+
     void downloadXrayGeoAsset(const QString &url, const QString &fileName);
 
     void rememberGeoAssetUrl(QComboBox *combo, const QString &url, QStringList &history);

@@ -4,6 +4,7 @@
 #include "include/ui/widget/json/SchemaStore.h"
 #include "include/ui/setting/ThemeManager.hpp"
 #include "include/ui/setting/Icon.hpp"
+#include "include/ui/setting/dialog_hotspot_gateway.h"
 #include "include/ui/utils/GuiUtils.hpp"
 #include "include/global/Configs.hpp"
 #include "include/global/DeviceDetailsHelper.hpp"
@@ -12,6 +13,7 @@
 #include "include/database/entities/Group.h"
 #include "include/engine/services/AssetUpdates.h"
 #include "include/engine/services/BackupArchive.h"
+#include "include/engine/services/HotspotGatewayManager.h"
 #include "include/ui/utils/ValidationForm.h"
 
 #include <QStyleFactory>
@@ -265,6 +267,33 @@ DialogBasicSettings::DialogBasicSettings(QWidget *parent)
     D_LOAD_BOOL(inbound_auth)
     D_LOAD_STRING(inbound_user)
     D_LOAD_STRING(inbound_pass)
+
+    ui->hotspot_gateway->setChecked(Configs::dataManager->settingsRepo->hotspot_gateway);
+    refreshHotspotGatewaySummary();
+    connect(ui->hotspot_gateway, &QCheckBox::toggled, this, [this](bool checked) {
+        // Turning it on is the dialog: Cancel leaves the switch off and saves nothing.
+        if (checked && !showHotspotDialog()) {
+            const QSignalBlocker blocker(ui->hotspot_gateway);
+            ui->hotspot_gateway->setChecked(false);
+            refreshHotspotGatewaySummary();
+            return;
+        }
+        auto &settings = *Configs::dataManager->settingsRepo;
+        settings.hotspot_gateway = ui->hotspot_gateway->isChecked();
+        settings.Save();
+        Engine::HotspotGatewayManager::instance()->setEnabled(settings.hotspot_gateway);
+        refreshHotspotGatewaySummary();
+    });
+    connect(ui->hotspot_gateway_summary, &QLabel::linkActivated, this, [this](const QString &) {
+        if (!ui->hotspot_gateway->isChecked()) return;
+        // Clicking the entry while it is on reopens the dialog.
+        if (showHotspotDialog()) {
+            Engine::HotspotGatewayManager::instance()->applySettings();
+            refreshHotspotGatewaySummary();
+        }
+    });
+    connect(Engine::HotspotGatewayManager::instance(), &Engine::HotspotGatewayManager::gatewayChanged, this,
+            [this] { refreshHotspotGatewaySummary(); });
 
     ui->url_scheme_auto_register->setChecked(Configs::dataManager->settingsRepo->url_scheme_auto_register);
     ui->file_assoc_auto_register->setChecked(Configs::dataManager->settingsRepo->file_assoc_auto_register);
@@ -609,6 +638,25 @@ void DialogBasicSettings::refreshUrlSchemeStatus() {
     };
     show(ui->url_scheme_status, Association::Links);
     show(ui->file_assoc_status, Association::ConfigFiles);
+}
+
+void DialogBasicSettings::refreshHotspotGatewaySummary() {
+    const QString description = tr("Use the Wi-Fi gateway as a SOCKS5 server automatically");
+    if (!ui->hotspot_gateway->isChecked()) {
+        ui->hotspot_gateway_summary->setTextFormat(Qt::PlainText);
+        ui->hotspot_gateway_summary->setText(description);
+        return;
+    }
+    const QString gateway = Engine::HotspotGatewayManager::instance()->currentGateway();
+    const QString state = gateway.isEmpty() ? tr("no Wi-Fi gateway") : tr("Current gateway: %1").arg(gateway);
+    // While on, the entry itself reopens the dialog when clicked.
+    ui->hotspot_gateway_summary->setTextFormat(Qt::RichText);
+    ui->hotspot_gateway_summary->setText(QStringLiteral("<a href=\"configure\">%1 \u2014 %2</a>").arg(description, state));
+}
+
+bool DialogBasicSettings::showHotspotDialog() {
+    DialogHotspotGateway dialog(this);
+    return dialog.exec() == QDialog::Accepted;
 }
 
 void DialogBasicSettings::applyRegexHighlighting() {

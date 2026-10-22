@@ -459,6 +459,9 @@ namespace Engine::SettingsRegistry {
             QStringLiteral("log_font_family"), QStringLiteral("log_font_size"),
             QStringLiteral("hk_mw"), QStringLiteral("hk_group"), QStringLiteral("hk_route"), QStringLiteral("hk_spmenu"),
             QStringLiteral("hk_toggle"), QStringLiteral("hk_startstop"), QStringLiteral("hk_tun"), QStringLiteral("shortcuts"),
+            QStringLiteral("hotspot_gateway_enabled"), QStringLiteral("hotspot_gateway_port"), QStringLiteral("hotspot_gateway_user"),
+            QStringLiteral("hotspot_gateway_pass"), QStringLiteral("hotspot_gateway_uot"), QStringLiteral("hotspot_gateway_last"),
+            QStringLiteral("hotspot_gateway_profile_id"),
         };
         return keys;
     }

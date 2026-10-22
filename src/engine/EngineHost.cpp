@@ -22,6 +22,7 @@
 #include "include/engine/headless/HeadlessPolicy.h"
 #include "include/engine/services/AssetUpdates.h"
 #include "include/engine/services/Dashboard.h"
+#include "include/engine/services/HotspotGatewayManager.h"
 #include "include/engine/services/ProfileService.h"
 #include "include/engine/services/StatsService.h"
 #include "include/engine/supervisor/CoreSupervisor.h"
@@ -280,6 +281,9 @@ namespace Engine {
             emit statusChanged();
         }
 
+        // First gateway read and the OS route notification; nothing is registered while the feature is off.
+        HotspotGatewayManager::instance()->init();
+
         // On failure the supervisor posts the notice, and start() and every profile start refuse to run.
         m_coreSupervisor->listen();
 
@@ -326,6 +330,7 @@ namespace Engine {
 
     void EngineHost::shutdown(bool interactive) {
         ENGINE_CHECK_MAIN_THREAD();
+        HotspotGatewayManager::instance()->shutdown();
         m_exit->shutdown(interactive);
     }
 

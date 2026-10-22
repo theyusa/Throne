@@ -392,6 +392,10 @@ set(PROJECT_SOURCES
         include/ui/setting/dialog_basic_settings.h
         include/ui/setting/dialog_basic_settings.ui
 
+        src/ui/setting/dialog_hotspot_gateway.cpp
+        include/ui/setting/dialog_hotspot_gateway.h
+        include/ui/setting/dialog_hotspot_gateway.ui
+
         src/ui/setting/DiagnosticsTab.cpp
         include/ui/setting/DiagnosticsTab.h
         include/ui/setting/DiagnosticsTab.ui
@@ -683,6 +687,7 @@ set(HEADLESS_SYS_SOURCES
         src/sys/HostPresence.cpp
         include/sys/HostTun.hpp
         src/sys/HostTun.cpp
+        include/sys/HotspotGateway.hpp
 )
 list(APPEND PROJECT_SOURCES ${HEADLESS_SYS_SOURCES})
 
@@ -727,6 +732,8 @@ set(ENGINE_SOURCES
         src/engine/services/AssetUpdates.cpp
         include/engine/services/StatsService.h
         src/engine/services/StatsService.cpp
+        include/engine/services/HotspotGatewayManager.h
+        src/engine/services/HotspotGatewayManager.cpp
         include/engine/tests/TestObserver.h
         include/engine/tests/TestRunner.h
         src/engine/tests/TestRunner.cpp
@@ -845,6 +852,7 @@ set(TS_FILES
         res/translations/zh_CN.ts
         res/translations/fa_IR.ts
         res/translations/ru_RU.ts
+        res/translations/tr_TR.ts
 )
 set(LUPDATE_OPTIONS
         -locations none -no-obsolete

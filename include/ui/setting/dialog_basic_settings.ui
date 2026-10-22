@@ -171,6 +171,23 @@
           <item row="1" column="2">
            <widget class="QLineEdit" name="inbound_address"/>
           </item>
+          <item row="5" column="1">
+           <widget class="QCheckBox" name="hotspot_gateway">
+            <property name="text">
+             <string>Hotspot Gateway</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="2" colspan="4">
+           <widget class="QLabel" name="hotspot_gateway_summary">
+            <property name="text">
+             <string>Use the Wi-Fi gateway as a SOCKS5 server automatically</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
@@ -879,6 +896,11 @@
               <item>
                <property name="text">
                 <string notr="true">Русский</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string notr="true">Türkçe</string>
                </property>
               </item>
              </widget>

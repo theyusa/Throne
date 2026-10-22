@@ -1357,6 +1357,11 @@ namespace Configs {
                     if (settings.vpn_ipv6) excludedRanges = subtractPrefix(excludedRanges, tunIPv6CIDR);
                 }
                 for (const auto &range : excludedRanges) routeExcludeAddrs << range;
+                // The managed Hotspot Gateway profile dials the gateway over the physical interface: its address must
+                // never fall into the Tun's own default route, and the private-range bypass cannot be relied on here.
+                if (settings.hotspot_gateway)
+                    if (const auto prefix = routeExcludePrefix(settings.hotspot_gateway_last); !prefix.isEmpty())
+                        routeExcludeAddrs << prefix;
                 // An IPv4-only Tun's strict route rejects every IPv6 flow, [::1] included; the static exclusion is checked first.
                 if (ctx.os == Linux && settings.vpn_strict_route && !settings.vpn_ipv6) routeExcludeAddrs << "::1/128";
                 inboundObj["route_exclude_address"] = routeExcludeAddrs;

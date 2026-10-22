@@ -237,6 +237,18 @@ namespace Configs {
         QString default_domain_strategy = "";
         int ruleset_mirror = Mirrors::CLOUDFLARE;
 
+        // Hotspot gateway: one managed "Hotspot Gateway" SOCKS5 profile follows the Wi-Fi gateway (see
+        // Engine::HotspotGatewayManager). The password is stored in plain text in throne.db like every other credential
+        // here (inbound_pass, webdav_pass, profiles.outbound_json); the keys match the Android app's settings table.
+        bool hotspot_gateway = false;
+        int hotspot_gateway_port = 2080;
+        QString hotspot_gateway_user = "";
+        // Kept exactly as typed; nothing trims it on the way in or out.
+        QString hotspot_gateway_pass = "";
+        bool hotspot_gateway_uot = false;
+        QString hotspot_gateway_last = "";
+        int hotspot_gateway_profile_id = NoProfileId;
+
         // Socks & HTTP Inbound
         bool disable_mixed_inbound = false;
         QString inbound_address = "127.0.0.1";
