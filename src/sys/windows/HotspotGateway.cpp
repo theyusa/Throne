@@ -1,12 +1,14 @@
-﻿#include "include/sys/HotspotGateway.hpp"
-
-#include "include/sys/HostTun.hpp"
-
+﻿// <winsock2.h> must come before any <windows.h>/<winsock.h> in this TU (the unity build never merges this file with
+// other TUs; see the SKIP_UNITY_BUILD_INCLUSION note in CMakeLists.txt).
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
 #include <netioapi.h>
 #include <iphlpapi.h>
+
+#include "include/sys/HotspotGateway.hpp"
+
+#include "include/sys/HostTun.hpp"
 
 #include <QScopeGuard>
 #include <QString>

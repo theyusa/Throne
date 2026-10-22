@@ -823,6 +823,9 @@ if (WIN32 AND MSVC)
 endif ()
 set_property(SOURCE "3rdparty/SQLiteCpp/src/sqlite3.c" PROPERTY SKIP_UNITY_BUILD_INCLUSION ON)
 set_property(SOURCE "3rdparty/monocypher/monocypher.c" PROPERTY SKIP_UNITY_BUILD_INCLUSION ON)
+# The only TU including <winsock2.h>: it must not share a unity batch with a <windows.h> TU, which would have pulled
+# <winsock.h> first and made every socket struct a redefinition.
+set_property(SOURCE "src/sys/windows/HotspotGateway.cpp" PROPERTY SKIP_UNITY_BUILD_INCLUSION ON)
 
 # Verified to link. OMIT_VIRTUALTABLE/VIEW/ANALYZE/CTE/WINDOWFUNC/DECLTYPE all break this build.
 target_compile_definitions(Throne PRIVATE
