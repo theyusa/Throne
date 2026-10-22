@@ -7,6 +7,9 @@
 // Per-platform. The hotspot host is this machine's IPv4 default gateway, and it moves between sessions (DHCP), so it is
 // read from the routing table and its changes are watched through the OS's own route notifications: no timers, no polling
 // threads, and nothing at all running while the feature is off. IPv4 only.
+//
+// The managed profile never carries the gateway address itself: it points at a fixed name and the system hosts file maps
+// that name to the current gateway, so a gateway change costs one hosts-file write and no core restart at all.
 namespace Sys::HotspotGateway {
     // The next hop of the IPv4 default route (0.0.0.0/0) on a physical interface, Wi-Fi preferred; empty when there is
     // none. Loopback, our own Tun (HostTun::kTunName) and virtual/tunnel adapters (other VPNs, Docker, WSL, Hyper-V,
@@ -19,4 +22,9 @@ namespace Sys::HotspotGateway {
 
     // Cancels the notification and releases everything StartWatching acquired; safe to call when not watching.
     void StopWatching();
+
+    // Maps host to address in the system hosts file (replacing any earlier mapping of the same host) and flushes the
+    // resolver cache. Returns what failed, empty on success; the file is protected, so this needs the rights the Tun
+    // already requires. Main thread.
+    QString SetHostsEntry(const QString &host, const QString &address);
 } // namespace Sys::HotspotGateway

@@ -14,4 +14,8 @@ namespace Sys::HotspotGateway {
 
     void StopWatching() {
     }
+
+    QString SetHostsEntry(const QString &, const QString &) {
+        return QStringLiteral("the hosts mapping is not implemented on macOS");
+    }
 } // namespace Sys::HotspotGateway

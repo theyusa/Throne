@@ -2,6 +2,7 @@
 
 #include "include/sys/HostTun.hpp"
 
+#include <QFile>
 #include <QFileInfo>
 #include <QScopeGuard>
 #include <QSocketNotifier>
@@ -172,5 +173,28 @@ namespace Sys::HotspotGateway {
             close(HgWatchSocket);
             HgWatchSocket = -1;
         }
+    }
+
+    QString SetHostsEntry(const QString &host, const QString &address) {
+        const QString path = QStringLiteral("/etc/hosts");
+        // Keep every line that does not map this host; the mapping is rebuilt, so an old gateway never lingers.
+        QStringList lines;
+        QFile file(path);
+        if (file.exists()) {
+            if (!file.open(QIODevice::ReadOnly)) return QStringLiteral("%1: %2").arg(path, file.errorString());
+            while (!file.atEnd()) {
+                const QString line = QString::fromLatin1(file.readLine()).trimmed();
+                const qsizetype comment = line.indexOf(QLatin1Char('#'));
+                const QString fields = (comment < 0 ? line : line.left(comment)).simplified();
+                if (!fields.split(QLatin1Char(' '), Qt::SkipEmptyParts).contains(host)) lines << line;
+            }
+            file.close();
+        }
+        lines << address + QLatin1Char(' ') + host;
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) return QStringLiteral("%1: %2").arg(path, file.errorString());
+        file.write((lines.join(QStringLiteral("\n")) + QStringLiteral("\n")).toLatin1());
+        file.close();
+        // glibc reads /etc/hosts per lookup, so there is no cache to flush.
+        return {};
     }
 } // namespace Sys::HotspotGateway

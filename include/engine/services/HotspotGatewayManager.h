@@ -1,16 +1,16 @@
 #pragma once
 
-#include <QElapsedTimer>
 #include <QObject>
 #include <QString>
 
 class QTimer;
 
 namespace Engine {
-    // The "Hotspot Gateway" feature: exactly one managed SOCKS5 profile, named like the Android app's, that always points
-    // at the current Wi-Fi gateway of the network this machine joined. The gateway is the hotspot host's address and it
-    // moves between sessions (DHCP), so an OS route notification (Sys::HotspotGateway) re-reads it and the profile is
-    // rewritten in place; nothing runs while the feature is off. Main thread only.
+    // The "Hotspot Gateway" feature: exactly one managed SOCKS5 profile, named like the Android app's, that dials the
+    // hotspot host through a fixed name ("telefon.lan"). The gateway address lives only in the system hosts file, which
+    // Sys::HotspotGateway rewrites when the gateway moves (an OS route notification, no polling): the running core picks
+    // the new address up on its next dial, so a gateway change never touches the profile and never restarts anything.
+    // Main thread only; nothing runs while the feature is off.
     class HotspotGatewayManager : public QObject {
         Q_OBJECT
 
@@ -20,21 +20,23 @@ namespace Engine {
         // The managed profile's name; the profile is found by this name or by the remembered id, and never anything else.
         static QString profileName();
 
+        // The fixed address the managed profile dials; the hosts file maps it to the current gateway.
+        static QString profileHost();
+
         // Once at app start, after the database exists: with the feature on, reads the gateway and registers the OS
         // change notification. Nothing at all is registered while the feature is off.
         void init();
 
-        // After the settings dialog changed the enabled flag: on starts the watcher and updates the profile at once,
-        // off cancels the notification and the pending debounce.
+        // After the settings dialog changed the enabled flag: on writes the hosts mapping and the profile at once, off
+        // cancels the notification. The profile and the hosts entry are left in place on disable.
         void setEnabled(bool enabled);
 
-        // After the settings dialog saved port/user/password/uot: rewrites the managed profile and reloads the core when
-        // that profile is part of the running config. With nothing to write it still does, so an edit never needs a
-        // second step.
+        // After the settings dialog saved port/user/password/uot: rewrites the managed profile and restarts it when it
+        // runs, so the edited fields apply.
         void applySettings();
 
-        // Right before the core starts: re-reads the gateway so the config that is about to be built carries it. It never
-        // restarts anything: the start in flight already covers the change.
+        // Right before the core starts: refreshes the hosts mapping so the config that is about to be built sees a
+        // current gateway exclusion.
         void beforeCoreStart();
 
         // On app exit: cancels the OS notification.
@@ -56,27 +58,15 @@ namespace Engine {
         // Marshals a watcher event to this thread and debounces bursts.
         void scheduleCheck();
 
-        // Debounced watcher event: confirmed is set on the settling re-read. A new gateway must survive the settling
-        // window before anything is rewritten - route flaps (a Wi-Fi adapter briefly dropping, a second default route
-        // flickering in) used to restart the core over and over and could not be told apart from a real gateway change.
-        void observe(bool confirmed);
+        // One gateway read per (debounced) event: writes the hosts mapping when the value moved, and does nothing at
+        // all when it did not.
+        void observe();
 
-        // Rewrites the managed profile for the current gateway. allowReload restarts the running profile; immediateRestart
-        // skips the rate limit (user actions), watcher-driven restarts cost at most one restart per cooldown window.
-        void apply(bool allowReload, bool immediateRestart = false);
-
-        void restartRunning(int managedId, bool immediate);
+        // Creates or updates the managed profile from the stored settings; only user actions call this.
+        void saveProfile();
 
         QString m_gateway;
-        // What a pending settling pass is confirming; empty while none is pending.
-        QString m_candidate;
         QTimer *m_debounce = nullptr;
-        QTimer *m_settle = nullptr;
-        QTimer *m_restartDefer = nullptr;
-        QElapsedTimer m_lastRestart;
-        // When the gateway went missing (the link dropped), for the recovery restart below.
-        qint64 m_outageAtMs = 0;
         bool m_watching = false;
-        bool m_restartPending = false;
     };
 } // namespace Engine

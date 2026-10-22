@@ -10,9 +10,17 @@
 
 #include "include/sys/HostTun.hpp"
 
+#include <QFile>
 #include <QScopeGuard>
 #include <QString>
 #include <QStringList>
+
+#include <windns.h>
+
+#ifdef __MINGW32__
+// mingw-w64's windns.h omits this prototype although dnsapi exports it; the SDK declares it on MSVC.
+extern "C" DNS_STATUS WINAPI DnsFlushResolverCache(VOID);
+#endif
 
 #include <algorithm>
 #include <limits>
@@ -189,5 +197,32 @@ namespace Sys::HotspotGateway {
         // callback racing this teardown cannot deadlock against it.
         if (routeHandle != nullptr) CancelMibChangeNotify2(routeHandle);
         if (ifcHandle != nullptr) CancelMibChangeNotify2(ifcHandle);
+    }
+
+    QString SetHostsEntry(const QString &host, const QString &address) {
+        wchar_t systemDir[MAX_PATH] = {};
+        if (GetSystemDirectoryW(systemDir, MAX_PATH) == 0) return QStringLiteral("GetSystemDirectory failed (%1)").arg(GetLastError());
+        const QString path = QString::fromWCharArray(systemDir) + QStringLiteral("\\drivers\\etc\\hosts");
+
+        // Keep every line that does not map this host; the mapping is rebuilt, so an old gateway never lingers.
+        QStringList lines;
+        QFile file(path);
+        if (file.exists()) {
+            if (!file.open(QIODevice::ReadOnly)) return QStringLiteral("%1: %2").arg(path, file.errorString());
+            while (!file.atEnd()) {
+                const QString line = QString::fromLatin1(file.readLine()).trimmed();
+                const qsizetype comment = line.indexOf(QLatin1Char('#'));
+                const QString fields = (comment < 0 ? line : line.left(comment)).simplified();
+                if (!fields.split(QLatin1Char(' '), Qt::SkipEmptyParts).contains(host)) lines << line;
+            }
+            file.close();
+        }
+        lines << address + QLatin1Char(' ') + host;
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) return QStringLiteral("%1: %2").arg(path, file.errorString());
+        file.write((lines.join(QStringLiteral("\r\n")) + QStringLiteral("\r\n")).toLatin1());
+        file.close();
+
+        DnsFlushResolverCache();
+        return {};
     }
 } // namespace Sys::HotspotGateway

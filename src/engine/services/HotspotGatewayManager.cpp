@@ -15,11 +15,6 @@
 
 namespace {
     constexpr int kHotspotDebounceMs = 500;
-    // A new gateway must survive this before anything is rewritten: route flaps (a Wi-Fi adapter briefly dropping, a
-    // second default route flickering in) are common while Tun is up and cost a core restart each if acted on at once.
-    constexpr int kHotspotSettleMs = 2000;
-    // At most one watcher-driven core restart per this window; a burst of real changes is applied on the next start.
-    constexpr int kHotspotRestartCooldownMs = 10000;
 
     void hotspotLog(const QString &line) {
         MW_show_log(QStringLiteral("[HotspotGateway] ") + line);
@@ -36,21 +31,7 @@ namespace Engine {
         m_debounce = new QTimer(this);
         m_debounce->setSingleShot(true);
         m_debounce->setInterval(kHotspotDebounceMs);
-        connect(m_debounce, &QTimer::timeout, this, [this] { observe(false); });
-
-        m_settle = new QTimer(this);
-        m_settle->setSingleShot(true);
-        m_settle->setInterval(kHotspotSettleMs);
-        connect(m_settle, &QTimer::timeout, this, [this] { observe(true); });
-
-        m_restartDefer = new QTimer(this);
-        m_restartDefer->setSingleShot(true);
-        connect(m_restartDefer, &QTimer::timeout, this, [this] {
-            if (!m_restartPending) return;
-            m_restartPending = false;
-            const int managedId = Configs::dataManager->settingsRepo->hotspot_gateway_profile_id;
-            if (managedId != Configs::NoProfileId) restartRunning(managedId, true);
-        });
+        connect(m_debounce, &QTimer::timeout, this, [this] { observe(); });
     }
 
     QString HotspotGatewayManager::profileName() {
@@ -58,11 +39,17 @@ namespace Engine {
         return QStringLiteral("Hotspot Gateway");
     }
 
+    QString HotspotGatewayManager::profileHost() {
+        // Not translated either: the hosts file maps this fixed name to the current gateway, so the profile - and the
+        // running core - never see a gateway change at all.
+        return QStringLiteral("telefon.lan");
+    }
+
     void HotspotGatewayManager::init() {
         ENGINE_CHECK_MAIN_THREAD();
         if (!Configs::dataManager->settingsRepo->hotspot_gateway) return;
         ensureWatching();
-        observe(false);
+        observe();
     }
 
     void HotspotGatewayManager::ensureWatching() {
@@ -83,26 +70,22 @@ namespace Engine {
         ENGINE_CHECK_MAIN_THREAD();
         if (!enabled) {
             m_debounce->stop();
-            m_settle->stop();
-            m_restartDefer->stop();
-            m_restartPending = false;
-            m_candidate.clear();
-            m_outageAtMs = 0;
             if (m_watching) {
                 Sys::HotspotGateway::StopWatching();
                 m_watching = false;
                 LOG_INFO("[HotspotGateway] route watching stopped");
             }
+            // The profile and the hosts entry stay as they are; the profile keeps working for whoever uses it.
             return;
         }
         ensureWatching();
-        // Forced: the just-entered port/user/password/uot must reach the profile even when the gateway did not move.
-        apply(true, true);
+        saveProfile();
+        observe();
     }
 
     void HotspotGatewayManager::applySettings() {
         ENGINE_CHECK_MAIN_THREAD();
-        apply(true, true);
+        saveProfile();
     }
 
     void HotspotGatewayManager::beforeCoreStart() {
@@ -110,16 +93,13 @@ namespace Engine {
         if (!Configs::dataManager->settingsRepo->hotspot_gateway) return;
         // If the registration failed earlier (a transient OS condition), try again; this is the last moment to catch up.
         ensureWatching();
-        // No reload from here: the start this runs inside is about to build its config with the answer.
-        apply(false);
+        // Refreshes the hosts mapping and the gateway the Tun exclusion is built from.
+        observe();
     }
 
     void HotspotGatewayManager::shutdown() {
         ENGINE_CHECK_MAIN_THREAD();
         m_debounce->stop();
-        m_settle->stop();
-        m_restartDefer->stop();
-        m_restartPending = false;
         if (m_watching) {
             Sys::HotspotGateway::StopWatching();
             m_watching = false;
@@ -127,67 +107,41 @@ namespace Engine {
     }
 
     void HotspotGatewayManager::scheduleCheck() {
-        // Bursts (a DHCP renewal moves several routes) collapse into one check; the timer is only alive while they last.
+        // Bursts (a DHCP renewal moves several routes) collapse into one read; the timer is only alive while they last.
         m_debounce->start();
     }
 
-    void HotspotGatewayManager::observe(bool confirmed) {
+    void HotspotGatewayManager::observe() {
         ENGINE_CHECK_MAIN_THREAD();
         auto &settings = *Configs::dataManager->settingsRepo;
         if (!settings.hotspot_gateway) return;
 
+        // The one read per event; nothing else ever queries the routing table.
         const QString gateway = Sys::HotspotGateway::CurrentGateway();
         if (gateway != m_gateway) {
+            hotspotLog(gateway.isEmpty() ? tr("No Wi-Fi gateway: the default route is gone")
+                                         : tr("Gateway is %1").arg(gateway));
             m_gateway = gateway;
             emit gatewayChanged();
         }
-        // No Wi-Fi gateway (not on Wi-Fi): keep the last profile unchanged, do not delete anything.
-        if (gateway.isEmpty()) {
-            if (m_outageAtMs == 0) {
-                m_outageAtMs = MonotonicMs();
-                hotspotLog(tr("No Wi-Fi gateway: the default route is gone (link down or flipped)"));
-            }
-            m_candidate.clear();
+        // No Wi-Fi gateway (not on Wi-Fi): keep the last mapping, do not delete anything.
+        if (gateway.isEmpty()) return;
+        if (gateway == settings.hotspot_gateway_last) return;
+
+        // The whole change handling: one hosts-file write. The profile keeps its fixed name and the running core
+        // resolves it again on its next dial, so nothing is restarted and the profile is never touched.
+        if (const QString error = Sys::HotspotGateway::SetHostsEntry(profileHost(), gateway); !error.isEmpty()) {
+            hotspotLog(tr("Could not update the hosts file (%1); is Throne running as administrator?").arg(error));
             return;
         }
-        const qint64 outageMs = m_outageAtMs == 0 ? 0 : MonotonicMs() - m_outageAtMs;
-        m_outageAtMs = 0;
-        if (outageMs > 0) hotspotLog(tr("The gateway is back: %1 (outage %2 s)").arg(gateway).arg(outageMs / 1000));
-        // Back to the stored value (a flap that recovered): the profile needs nothing, but after a real outage the core
-        // is regularly left with "missing default interface" and every dial fails until it restarts, so heal it here.
-        if (gateway == settings.hotspot_gateway_last) {
-            m_candidate.clear();
-            if (outageMs >= kHotspotSettleMs) {
-                hotspotLog(tr("The gateway is back after %1 s of outage; restarting the running profile").arg(outageMs / 1000));
-                apply(true);
-            }
-            return;
-        }
-        if (!confirmed || gateway != m_candidate) {
-            // First sighting, or it moved again while settling: settle on the newest value and wait.
-            m_candidate = gateway;
-            m_settle->start();
-            return;
-        }
-        m_candidate.clear();
-        hotspotLog(tr("Gateway changed: %1 -> %2").arg(settings.hotspot_gateway_last.isEmpty() ? QStringLiteral("-") : settings.hotspot_gateway_last, gateway));
-        apply(true);
+        hotspotLog(tr("%1 -> %2").arg(settings.hotspot_gateway_last.isEmpty() ? QStringLiteral("-") : settings.hotspot_gateway_last, gateway));
+        settings.hotspot_gateway_last = gateway;
+        settings.Save();
     }
 
-    void HotspotGatewayManager::apply(bool allowReload, bool immediateRestart) {
+    void HotspotGatewayManager::saveProfile() {
         ENGINE_CHECK_MAIN_THREAD();
         auto &settings = *Configs::dataManager->settingsRepo;
-        if (!settings.hotspot_gateway) return;
-
-        const QString gateway = Sys::HotspotGateway::CurrentGateway();
-        if (gateway != m_gateway) {
-            m_gateway = gateway;
-            emit gatewayChanged();
-        }
-        // Nothing to dial at: keep the last profile untouched until a gateway is back.
-        if (gateway.isEmpty()) return;
-
-        settings.hotspot_gateway_last = gateway;
 
         auto &profiles = *Configs::dataManager->profilesRepo;
         std::shared_ptr<Configs::Profile> ent;
@@ -214,7 +168,8 @@ namespace Engine {
             return;
         }
         socks->name = profileName();
-        socks->server = gateway;
+        // The fixed name; only the hosts file follows the gateway.
+        socks->server = profileHost();
         socks->server_port = settings.hotspot_gateway_port;
         socks->username = settings.hotspot_gateway_user;
         // Stored exactly as typed, so the profile carries it exactly as typed.
@@ -228,28 +183,11 @@ namespace Engine {
         if (settings.hotspot_gateway_profile_id != ent->id) settings.hotspot_gateway_profile_id = ent->id;
         settings.Save();
 
-        if (allowReload) restartRunning(ent->id, immediateRestart);
-    }
-
-    void HotspotGatewayManager::restartRunning(int managedId, bool immediate) {
-        ENGINE_CHECK_MAIN_THREAD();
-        auto &settings = *Configs::dataManager->settingsRepo;
-        // The running config dials this gateway; with nothing running, saving above is all it takes.
-        if (settings.started_id != managedId && !Configs::RunningUsesProfile(managedId)) return;
-
-        if (!immediate && m_lastRestart.isValid()) {
-            if (const qint64 wait = kHotspotRestartCooldownMs - m_lastRestart.elapsed(); wait > 0) {
-                // Rate-limited: the profile already carries the new gateway and the next start picks it up; a burst of
-                // flaps must not become a burst of restarts.
-                m_restartPending = true;
-                m_restartDefer->start(static_cast<int>(wait));
-                hotspotLog(tr("Restart deferred by %1 s (rate limit)").arg(wait / 1000));
-                return;
-            }
+        // A user edit of port/user/password/uot must reach the running core too.
+        if (settings.started_id == ent->id || Configs::RunningUsesProfile(ent->id)) {
+            hotspotLog(tr("Restarting the running profile to apply the edited settings"));
+            if (auto *host = Engine::host(); host != nullptr && host->connection() != nullptr)
+                host->connection()->restartStartedProfile(false);
         }
-        m_lastRestart.start();
-        hotspotLog(tr("Restarting the running profile to follow the gateway"));
-        if (auto *host = Engine::host(); host != nullptr && host->connection() != nullptr)
-            host->connection()->restartStartedProfile(false);
     }
 } // namespace Engine
