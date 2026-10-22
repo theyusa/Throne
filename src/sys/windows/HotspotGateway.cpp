@@ -110,17 +110,11 @@ namespace {
         if (sink) sink();
     }
 
-#ifdef __MINGW32__
-    // mingw-w64's netioapi.h predates the final Vista API and types this callback with a bare row.
+    // The SDK types NotifyRouteChange2's callback as PIPFORWARD_CHANGE_CALLBACK: (context, row, notification type).
+    // The row is not needed here.
     VOID NETIOAPI_API_ HgRouteChanged(PVOID, PMIB_IPFORWARD_ROW2, MIB_NOTIFICATION_TYPE) {
         HgDeliverChange();
     }
-#else
-    // The Windows SDK's PFORWARD_CHANGE_CALLBACK; the notification itself is not needed.
-    VOID NETIOAPI_API_ HgRouteChanged(PVOID, PMIB_IPFORWARD_NOTIFICATION2) {
-        HgDeliverChange();
-    }
-#endif
 
     VOID NETIOAPI_API_ HgIfcChanged(PVOID, PMIB_IPINTERFACE_ROW, MIB_NOTIFICATION_TYPE) {
         HgDeliverChange();
