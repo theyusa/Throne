@@ -74,6 +74,8 @@ namespace Engine {
         QTimer *m_settle = nullptr;
         QTimer *m_restartDefer = nullptr;
         QElapsedTimer m_lastRestart;
+        // When the gateway went missing (the link dropped), for the recovery restart below.
+        qint64 m_outageAtMs = 0;
         bool m_watching = false;
         bool m_restartPending = false;
     };

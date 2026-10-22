@@ -87,6 +87,7 @@ namespace Engine {
             m_restartDefer->stop();
             m_restartPending = false;
             m_candidate.clear();
+            m_outageAtMs = 0;
             if (m_watching) {
                 Sys::HotspotGateway::StopWatching();
                 m_watching = false;
@@ -143,11 +144,19 @@ namespace Engine {
         // No Wi-Fi gateway (not on Wi-Fi): keep the last profile unchanged, do not delete anything.
         if (gateway.isEmpty()) {
             m_candidate.clear();
+            if (m_outageAtMs == 0) m_outageAtMs = MonotonicMs();
             return;
         }
-        // Back to the stored value (a flap that recovered): nothing to do, and the pending settle dies with it.
+        const qint64 outageMs = m_outageAtMs == 0 ? 0 : MonotonicMs() - m_outageAtMs;
+        m_outageAtMs = 0;
+        // Back to the stored value (a flap that recovered): the profile needs nothing, but after a real outage the core
+        // is regularly left with "missing default interface" and every dial fails until it restarts, so heal it here.
         if (gateway == settings.hotspot_gateway_last) {
             m_candidate.clear();
+            if (outageMs >= kHotspotSettleMs) {
+                hotspotLog(tr("The gateway is back after %1 s of outage; restarting the running profile").arg(outageMs / 1000));
+                apply(true);
+            }
             return;
         }
         if (!confirmed || gateway != m_candidate) {
