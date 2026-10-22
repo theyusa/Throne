@@ -143,12 +143,16 @@ namespace Engine {
         }
         // No Wi-Fi gateway (not on Wi-Fi): keep the last profile unchanged, do not delete anything.
         if (gateway.isEmpty()) {
+            if (m_outageAtMs == 0) {
+                m_outageAtMs = MonotonicMs();
+                hotspotLog(tr("No Wi-Fi gateway: the default route is gone (link down or flipped)"));
+            }
             m_candidate.clear();
-            if (m_outageAtMs == 0) m_outageAtMs = MonotonicMs();
             return;
         }
         const qint64 outageMs = m_outageAtMs == 0 ? 0 : MonotonicMs() - m_outageAtMs;
         m_outageAtMs = 0;
+        if (outageMs > 0) hotspotLog(tr("The gateway is back: %1 (outage %2 s)").arg(gateway).arg(outageMs / 1000));
         // Back to the stored value (a flap that recovered): the profile needs nothing, but after a real outage the core
         // is regularly left with "missing default interface" and every dial fails until it restarts, so heal it here.
         if (gateway == settings.hotspot_gateway_last) {
